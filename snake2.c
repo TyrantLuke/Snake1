@@ -11,7 +11,7 @@
 
 #define SN sizeof(struct snake)
 
-struct snake                              //@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
+struct snake                              //结构体
 {
     int s_y;
     int s_x;
@@ -42,17 +42,17 @@ int bgd[20][20]={1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};//地图（这样可以轻易修改，加墙啥的） 
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};//地图 
 
 
 int main()
 {
-    void food();
+    void food();//生成食物
     int kbhit(); //响应键盘敲击（在win中有头文件conio.h，但在Linux中没有，故此处为自行定义）
-    int agetch();
-    int usleep();
-    void direction();
-    head=p1=p2=(struct snake*)malloc(SN);            //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
+    int agetch();//得到敲入值
+    int usleep();//休眠函数
+    void direction();//处理输入数据，转为蛇的走向
+    head=p1=p2=(struct snake*)malloc(SN);            
     head->s_y=4;
     head->s_x=4;
     head->next=NULL;
@@ -69,7 +69,7 @@ int main()
             dir=agetch();
         direction();
         
-        if(bgd[b][a]==1)
+        if(bgd[b][a]==1)                            //判断是否撞墙以及咬到自己
             break;
         else if(bgd[b][a]==3)
             break;
