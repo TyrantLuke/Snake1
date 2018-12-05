@@ -16,7 +16,7 @@ struct snake//结构体,内含蛇节点的坐标和其前、后节点的指针�
 	int s_x;
 	struct snake * next;
 	struct snake * formal;
-}*head, *p1, *p2;
+} *p1, *p2,*tail;
 
 HANDLE hOutput, hOutBuf;//控制台屏幕缓冲区句柄
 COORD coord = { 0,0 };
@@ -26,32 +26,29 @@ DWORD bytes = 0;
 
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
-int li, num, f1, f2, b, a, y, x;
+int li, num, f1, f2, b, a, y, x,dif=300;
 char map2[20][20];
-int bgd[20][20] = 
-			  { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-				1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-				1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };//加墙地图 
-
-
-
+char bgd[20][36] =
+{ "####################***************",
+"#                  #     Snake    *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"#                  #              *",
+"####################***************" };//画地图，规定#为墙，O为蛇身，@为蛇头，$为食物
 
 int main()
 {
@@ -79,16 +76,15 @@ int main()
 	SetConsoleCursorInfo(hOutBuf, &cci);
 
 	void food();//生成食物
-	void change_map2();
 	void direction();//处理输入数据，转为蛇的走向
 	void move();//根据蛇咬到了啥决定运动，伸长，结束游戏等。
 	void print1();//用来展示缓冲区1
 	void print2();//用来展示缓冲区2
-	head = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
-	head->s_y = 4;//初始位置为（4,4）
-	head->s_x = 4;
-	head->next = NULL;
-	head->formal = NULL;
+	tail= p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
+	p1->s_y = 4;//初始位置为（4,4）
+	p1->s_x = 4;
+	p1->next = NULL;
+	p1->formal = NULL;
 	srand((unsigned int)(time_t(NULL)));//将随机数种子设为系统时间
 	f1 = rand() % 18 + 1;//f代表food，f1和f2分别表示食物的纵，横坐标
 	srand(f1);
@@ -105,29 +101,33 @@ int main()
 			dir = _getch();
 		direction();
 		move();
-		change_map2();
+		if (num == 18)
+			break;
 		if (li == 0)
 			break;
 		print1();
 		SetConsoleActiveScreenBuffer(hOutBuf);
-		Sleep(300);
+		Sleep(dif);
 
+		//另一块画布（同样的操作。）
 		formal_dir = dir;
 		if (_kbhit())
 			dir = _getch();
 		direction();
 		move();
-		change_map2();
+		if (num == 18)
+			break;
 		if (li == 0)
 			break;
 		print2();
 		SetConsoleActiveScreenBuffer(hOutput);
-		Sleep(300);
+		Sleep(dif);
 
 
 	}
 
 	printf("GAME OVER\nscore:%d\n", num);
+	printf("press to exit.");
 	_getch();
 
 	return 0;
@@ -138,7 +138,7 @@ int main()
 
 void direction()
 {
-	if (dir == up && formal_dir == down)              //防止控制蛇往回走
+	if (dir == up && formal_dir == down)//防止控制蛇往回走
 		dir = formal_dir;
 	else if (dir == down && formal_dir == up)
 		dir = formal_dir;
@@ -146,7 +146,7 @@ void direction()
 		dir = formal_dir;
 	else if (dir == right && formal_dir == left)
 		dir = formal_dir;
-	switch (dir)                                //蛇四面运动的实现
+	switch (dir)//蛇四面运动的实现
 	{
 	case up:b = b - 1; break;
 	case down:b = b + 1; break;
@@ -157,7 +157,7 @@ void direction()
 		if ('p' == _getch())         //暂停的实现
 			break;
 	}
-	default:                               //若为其他键输入，则无效化
+	default: //若为其他键输入，则无效化
 	{dir = formal_dir;
 	direction(); }
 	}
@@ -166,89 +166,75 @@ void direction()
 void food()
 {
 	if (num != 0) {
-		srand(f1);
+		srand(f1*(int)(dir)+1);
+		f1 = rand() % 18 + 1;
+		srand(f2*(int)dir);
+		f2 = rand() % 18 + 1;
 	}
-	f1 = rand() % 18 + 1;
-	if (num != 0) {
-		srand(f2);
-	}
-	f2 = rand() % 18 + 1;
-	if (bgd[f1][f2] == 2 || bgd[f1][f2] == 3 || bgd[f1][f2] == 1)                           //食物是否和蛇头重合
+	if (bgd[f1][f2] == 'O' || bgd[f1][f2] == '@' || bgd[f1][f2] == '#')     //食物是否和蛇头,墙壁或蛇身重合
 		food();
-	bgd[f1][f2] = 4;
+	bgd[f1][f2] = '$';
 }
 
 void move() {
-	if (bgd[b][a] == 1)                            //判断是否撞墙以及咬到自己
+	if (bgd[b][a] == '#') //判断是否撞墙
 		li = 0;
-	else if (bgd[b][a] == 3)
+	else if (bgd[b][a] == 'O')//是否咬到自己
 		li = 0;
-	else if (bgd[b][a] == 0)                        //蛇的运动
+	else if (bgd[b][a] == ' ')//蛇的运动要来了！！
 	{
-		bgd[head->s_y][head->s_x] = 0;
-		if (num == 0)
-		{
-			head->s_y = b;
-			head->s_x = a;
-		}
-		else                                   //将蛇的末尾部分给头部，达到移动效果
-		{
-			p1 = head;
+		if (num == 0)//一开始啥都没吃到的时候。。。
+		{	
+			bgd[p1->s_y][p1->s_x] = ' ';
 			p1->s_y = b;
 			p1->s_x = a;
-			head = head->next;
+		}
+		else//有蛇身的时候
+		{
+			bgd[tail->s_y][tail->s_x] = ' ';//去掉蛇尾
+			bgd[p2->s_y][p2->s_x] = 'O';//原来的蛇头变成蛇身
+
+			p1 = (struct snake*)malloc(SN);//来个蛇头
+			p1->s_y = b;//联结起来
+			p1->s_x = a;
 			p1->next = NULL;
-			bgd[p2->s_y][p2->s_x] = 3;
+			p1->formal = p2;
 			p2->next = p1;
 			p2 = p1;
+			tail = tail->next;//蛇尾移动
+			free(tail->formal);//原来的尾节点释放
+			tail->formal = NULL;
 		}
-		bgd[b][a] = 2;
+		bgd[b][a] = '@';//蛇头打印出来
 	}
-	else if (bgd[b][a] == 4)                                   //吃到食物，扩展链表
+	else if (bgd[b][a] == '$')                                   //吃到食物，扩展链表
 	{
-		p1 = (struct snake*)malloc(SN);
+		p1 = (struct snake*)malloc(SN);//建立新节点并联结
 		p1->s_y = b;
 		p1->s_x = a;
+		p1->formal = p2;
+		p1->next = NULL;	
 		p2->next = p1;
-		bgd[p2->s_y][p2->s_x] = 3;
+		bgd[p2->s_y][p2->s_x] = 'O';//更改蛇身字符
+		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
-		bgd[b][a] = 2;
-		f1 = f1 * dir;
-		f2 = f2 * dir;
-		food();
-		num++;
+		num++;//吃到食物计数
+		if (num % 4 == 0)
+			dif = dif - 50;
+		food();//刷新食物
+
 	}
 }
 
 void print1() {
-	//打印，0：空位；1：墙；2：蛇头；3：蛇身；4：食物
 	for (y = 0; y < 20; y++){
 		coord.Y = y;
-		WriteConsoleOutputCharacterA(hOutBuf, map2[y], 20, coord, &bytes);
+		WriteConsoleOutputCharacterA(hOutBuf, bgd[y], 36, coord, &bytes);
 	}
 }
 void print2() {
 	for (y = 0; y < 20; y++) {
 		coord.Y = y;
-		WriteConsoleOutputCharacterA(hOutput, map2[y], 20, coord, &bytes);
-	}
-}
-
-void change_map2() {
-	for (y = 0; y < 20; y++)
-	{
-		for (x = 0; x < 20; x++)
-		{
-			if (bgd[y][x] == 1)
-				map2[y][x] = '#';
-			else if (bgd[y][x] == 0)
-				map2[y][x] = ' ';
-			else if (bgd[y][x] == 2)
-				map2[y][x] = '@';
-			else if (bgd[y][x] == 3)
-				map2[y][x] = '0';
-			else if (bgd[y][x] == 4)
-				map2[y][x] = '$';
-		}
+		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
 }
