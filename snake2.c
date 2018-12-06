@@ -134,34 +134,44 @@ int main()
 }
 
 
-
-
 void direction()
 {
-	if (dir == up && formal_dir == down)//防止控制蛇往回走
-		dir = formal_dir;
-	else if (dir == down && formal_dir == up)
-		dir = formal_dir;
-	else if (dir == left && formal_dir == right)
-		dir = formal_dir;
-	else if (dir == right && formal_dir == left)
-		dir = formal_dir;
-	switch (dir)//蛇四面运动的实现
-	{
-	case up:b = b - 1; break;
-	case down:b = b + 1; break;
-	case left:a = a - 1; break;
-	case right:a = a + 1; break;
-	case 'p':while (1)
-	{
-		if ('p' == _getch())         //暂停的实现
-			break;
+	if (dir != -32) {
+		if (dir == up && formal_dir == down)//防止控制蛇往回走
+			dir = formal_dir;
+		else if (dir == down && formal_dir == up)
+			dir = formal_dir;
+		else if (dir == left && formal_dir == right)
+			dir = formal_dir;
+		else if (dir == right && formal_dir == left)
+			dir = formal_dir;
+		switch (dir) {//蛇四面运动的实现
+		case up:b = b - 1; break;
+		case down:b = b + 1; break;
+		case left:a = a - 1; break;
+		case right:a = a + 1; break;
+		case 'p':while (1) {
+			if ('p' == _getch())         //暂停的实现
+				break;
+		}
+		default: {//若为其他键输入，则无效化
+			dir = formal_dir;
+			direction();
+		}
+		}
 	}
-	default: //若为其他键输入，则无效化
-	{dir = formal_dir;
-	direction(); }
-	}
+	else {
+		switch (dir = _getch()) {
+		case 72:dir = up; break;
+		case 80:dir = down; break;
+		case 75:dir = left; break;
+		case 77:dir = right; break;
+		default:break;
+		}
+		direction();
+		}
 }
+
 
 void food()
 {
