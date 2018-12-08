@@ -177,7 +177,7 @@ void food()
 		srand(f2*(int)dir);
 		f2 = rand() % 18 + 1;
 	}
-	if (bgd[f1][f2]!=' ')     //食物是否和蛇头,墙壁或蛇身或毒草，炸弹重合
+	if (bgd[f1][f2]!=' ')     //食物是否和蛇头,墙壁或蛇身或毒草，地雷重合
 		food();
 	else 
 		bgd[f1][f2] = '$';
@@ -200,27 +200,6 @@ void loop_bomb() {//控制地雷生成
 	else
 		bgd[f1][f2] = 'X';
 }
-
-void bomb_and_poison(){
-	void loop_poison();
-	void loop_bomb();
-	if (num >5) {//吃到的食物大于5个，达到毒草生成条件
-		if (num % 3 == 0){//毒草在吃完每3个食物时刷新一次
-			if(poison[0][0]!=0)
-				for (i = 0; i <= 4; i++)//把之前的毒草都消掉
-					if(bgd[poison[i][0]][poison[i][1]]=='V')
-						bgd[poison[i][0]][poison[i][1]] = ' ';
-			for (i = 0; i <= 4; i++) {
-				loop_poison();
-				poison[i][0] = f1;
-				poison[i][1] = f2;
-			}
-		}
-	}
-	if (num > 10 && num % 3 == 2)//吃到的食物大于十个，达到地雷生成条件，每吃3个食物生成1个
-		loop_bomb();
-}
-
 
 void move() {
 	if (bgd[b][a] == '#') //判断是否撞墙
@@ -270,30 +249,78 @@ void move() {
 		food();//刷新食物
 		bomb_and_poison();
 	}
-	else if (bgd[b][a] == 'V') {
+	else if (bgd[b][a] == 'V') {//吃到毒草，减链表长度，增速；
 		num--;//分数减1
 		if (num < 0)
 			li = 0;
-		else if (dif > 0){
-			dif = dif - 20;
+		else {
+			if (dif > 0) //增速
+				dif = dif - 20;
 			p1 = (struct snake*)malloc(SN);//蛇头和前面蛇的移动的代码完全一样
 			p1->s_y = b;
 			p1->s_x = a;
 			p1->next = NULL;
 			p1->formal = p2;
 			p2->next = p1;
-			bgd[p2->s_y][p2->s_x] = 'O';//更改蛇身字符
-			bgd[b][a] = '@';//蛇头字符
+			bgd[p2->s_y][p2->s_x] = 'O';
+			bgd[b][a] = '@';
 			p2 = p1;
 			bgd[tail->s_y][tail->s_x] = ' ';//这两行将最后两个节点去掉
-			bgd[(tail->next)->s_y][(tail->next)->s_x] = ' ';
-			tail = (tail->next)->next;
-			free((tail->formal)->formal);
+			tail = tail->next;
+			free(tail->formal);
+			tail->formal = NULL;
+			bgd[tail->s_y][tail->s_x] = ' ';
+			tail = tail->next;
 			free(tail->formal);
 			tail->formal = NULL;
 		}
 	}
+	else if (bgd[b][a] == 'X') {//踩到地雷，当长度为1时死亡。否则失去接近一半的长度，且速度稍稍减慢；
+		p1 = (struct snake*)malloc(SN);//同上，先处理蛇头
+		p1->s_y = b;
+		p1->s_x = a;
+		p1->next = NULL;
+		p1->formal = p2;
+		p2->next = p1;
+		bgd[p2->s_y][p2->s_x] = 'O';
+		bgd[b][a] = '@';
+		p2 = p1;
+		if (num <= 1)//当长度为1
+			li = 0;
+		else {//长度不为1，减速且失去后半段蛇身
+			dif = dif + 50;//减速		
+			for (z = 1; z <= num / 2; z++) {
+				bgd[tail->s_y][tail->s_x] = ' ';
+				tail = tail->next;
+				free(tail->formal);
+				tail->formal = NULL;
+			}
+			num = num - num / 2;
+		}
+	}
 }
+
+void bomb_and_poison(){
+	void loop_poison();
+	void loop_bomb();
+	if (num >5) {//吃到的食物大于5个，达到毒草生成条件
+		if (num % 3 == 0){//毒草在吃完每3个食物时刷新一次
+			if(poison[0][0]!=0)
+				for (i = 0; i <= 4; i++)//把之前的毒草都消掉
+					if(bgd[poison[i][0]][poison[i][1]]=='V')
+						bgd[poison[i][0]][poison[i][1]] = ' ';
+			for (i = 0; i <= 4; i++) {
+				loop_poison();
+				poison[i][0] = f1;
+				poison[i][1] = f2;
+			}
+		}
+	}
+	if (num > 10 && num % 3 == 2)//吃到的食物大于十个，达到地雷生成条件，每吃3个食物生成1个
+		loop_bomb();
+}
+
+
 
 void print1() {
 	for (y = 0; y < 20; y++){
