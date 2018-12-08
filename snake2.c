@@ -33,11 +33,11 @@ char bgd[20][36] =
 { "####################--------------|",
 "#                  #     Snake    |",
 "#                  #--------------|",
-"#                  # wsad or arrow|",
+"#                  #wsad or arrow |",
 "#                  # keys to contr|",
 "#                  # ol the snake;|",
-"#                  # 'p' to pause |",
-"#                  # or begin.    |",
+"#                  #'p' to pause, |",
+"#                  # begin or exit|",
 "#                  #              |",
 "#                  # $: food      |",
 "#                  # V: poison    |",
@@ -132,7 +132,7 @@ int main()
 		Sleep(dif);
 	}
 
-	_getch();
+	while (_getch() != 'p') {}
 
 	return 0;
 }
