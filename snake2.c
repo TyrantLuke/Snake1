@@ -183,11 +183,9 @@ void food()
 		bgd[f1][f2] = '$';
 }
 
-void loop_poison(){ //控制毒草生成
-		srand(f1*(int)dir);
-		f1 = rand() % 18 + 1;
-		srand(f2*(int)dir);
-		f2 = rand() % 18 + 1;
+void loop_poison() { //控制毒草生成
+	f1 = rand() % 18 + 1;
+	f2 = rand() % 18 + 1;
 	if (bgd[f1][f2] != ' ')
 		loop_poison();
 	else
@@ -195,9 +193,7 @@ void loop_poison(){ //控制毒草生成
 }
 
 void loop_bomb() {//控制地雷生成
-	srand(f1);
 	f1 = rand() % 18 + 1;
-	srand(f2);
 	f2 = rand() % 18 + 1;
 	if (bgd[f1][f2] != ' ')
 		loop_bomb();
