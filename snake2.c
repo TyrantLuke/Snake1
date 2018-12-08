@@ -16,7 +16,7 @@ struct snake//结构体,内含蛇节点的坐标和其前、后节点的指针�
 	int s_x;
 	struct snake * next;
 	struct snake * formal;
-} *p1, *p2,*tail;
+} *p1, *p2, *tail;
 
 HANDLE hOutput, hOutBuf;//控制台屏幕缓冲区句柄
 COORD coord = { 0,0 };
@@ -26,22 +26,22 @@ DWORD bytes = 0;
 
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
-int li, num, f1, f2, b, a, y, x, i = 0, dif = 300;
+int li, num, f1, f2, b, a, y, x,z,c=0, i = 0, dif = 300;
 int poison[5][2] = { 0 };
 char map2[20][20];
 char bgd[20][36] =
 { "####################--------------|",
 "#                  #     Snake    |",
 "#                  #--------------|",
+"#                  # wsad or arrow|",
+"#                  # keys to contr|",
+"#                  # ol the snake;|",
+"#                  # 'p' to pause |",
+"#                  # or begin.    |",
 "#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
-"#                  #              |",
+"#                  # $: food      |",
+"#                  # V: poison    |",
+"#                  # X: bomb      |",
 "#                  #              |",
 "#                  #              |",
 "#                  #              |",
@@ -82,7 +82,7 @@ int main()
 	void move();//根据蛇咬到了啥决定运动，伸长，结束游戏等。
 	void print1();//用来展示缓冲区1
 	void print2();//用来展示缓冲区2
-	tail= p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
+	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
 	p1->s_x = 4;
 	p1->next = NULL;
@@ -110,6 +110,12 @@ int main()
 		if (num == 20)
 			break;
 		Sleep(dif);
+
+		if (c == 0) {//让玩家开始游戏
+			while (_getch() != 'p') {
+			}
+			c++;
+		}
 
 		//另一块画布（同样的操作。）
 		formal_dir = dir;
@@ -166,7 +172,7 @@ void direction()
 		default:break;
 		}
 		direction();
-		}
+	}
 }
 
 void food()
@@ -177,9 +183,9 @@ void food()
 		srand(f2*(int)dir);
 		f2 = rand() % 18 + 1;
 	}
-	if (bgd[f1][f2]!=' ')     //食物是否和蛇头,墙壁或蛇身或毒草，地雷重合
+	if (bgd[f1][f2] != ' ')     //食物是否和蛇头,墙壁或蛇身或毒草，地雷重合
 		food();
-	else 
+	else
 		bgd[f1][f2] = '$';
 }
 
@@ -200,6 +206,27 @@ void loop_bomb() {//控制地雷生成
 	else
 		bgd[f1][f2] = 'X';
 }
+
+void bomb_and_poison() {
+	void loop_poison();
+	void loop_bomb();
+	if (num > 5) {//吃到的食物大于5个，达到毒草生成条件
+		if (num % 3 == 0) {//毒草在吃完每3个食物时刷新一次
+			if (poison[0][0] != 0)
+				for (i = 0; i <= 4; i++)//把之前的毒草都消掉
+					if (bgd[poison[i][0]][poison[i][1]] == 'V')
+						bgd[poison[i][0]][poison[i][1]] = ' ';
+			for (i = 0; i <= 4; i++) {
+				loop_poison();
+				poison[i][0] = f1;
+				poison[i][1] = f2;
+			}
+		}
+	}
+	if (num > 10 && num % 3 == 2)//吃到的食物大于十个，达到地雷生成条件，每吃3个食物生成1个
+		loop_bomb();
+}
+
 
 void move() {
 	if (bgd[b][a] == '#') //判断是否撞墙
@@ -300,30 +327,8 @@ void move() {
 	}
 }
 
-void bomb_and_poison(){
-	void loop_poison();
-	void loop_bomb();
-	if (num >5) {//吃到的食物大于5个，达到毒草生成条件
-		if (num % 3 == 0){//毒草在吃完每3个食物时刷新一次
-			if(poison[0][0]!=0)
-				for (i = 0; i <= 4; i++)//把之前的毒草都消掉
-					if(bgd[poison[i][0]][poison[i][1]]=='V')
-						bgd[poison[i][0]][poison[i][1]] = ' ';
-			for (i = 0; i <= 4; i++) {
-				loop_poison();
-				poison[i][0] = f1;
-				poison[i][1] = f2;
-			}
-		}
-	}
-	if (num > 10 && num % 3 == 2)//吃到的食物大于十个，达到地雷生成条件，每吃3个食物生成1个
-		loop_bomb();
-}
-
-
-
 void print1() {
-	for (y = 0; y < 20; y++){
+	for (y = 0; y < 20; y++) {
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutBuf, bgd[y], 36, coord, &bytes);
 	}
