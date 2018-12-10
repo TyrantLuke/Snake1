@@ -1,9 +1,7 @@
-
 #include<stdio.h>
 #include<stdlib.h>        
 #include<conio.h>      
 #include<windows.h>
-
 //定义四个方向的对应字符
 #define up 'w'
 #define down 's'
@@ -27,18 +25,18 @@ DWORD bytes = 0;
 
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
-int li, num, f1, f2, b, a, y, x,z,c=0, i = 0, dif = 300;
+int li, num, f1, f2, b, a, y, x, z,q, c = 0, i = 0, dif = 300;
 int poison[5][2] = { 0 };
 char map2[20][20];
 char bgd[20][36] =
 { "####################--------------|",
 "#                  #     Snake    |",
 "#                  #--------------|",
-"#                  #wsad or arrow |",
+"#                  # wsad or arrow|",
 "#                  # keys to contr|",
 "#                  # ol the snake;|",
-"#                  #'p' to pause, |",
-"#                  # begin or exit|",
+"#                  #  p to pause, |",
+"#                  #begin or exit.|",
 "#                  #              |",
 "#                  # $: food      |",
 "#                  # V: poison    |",
@@ -76,13 +74,18 @@ int main()
 	cci.dwSize = 1;
 	SetConsoleCursorInfo(hOutput, &cci);
 	SetConsoleCursorInfo(hOutBuf, &cci);
-
+	void welcome();//贪吃蛇初始欢迎界面
 	void food();//生成食物
 	void bomb_and_poison();//生成毒草和地雷
 	void direction();//处理输入数据，转为蛇的走向
 	void move();//根据蛇咬到了啥决定运动，伸长，结束游戏等。
 	void print1();//用来展示缓冲区1
 	void print2();//用来展示缓冲区2
+
+	welcome();
+	while (_getch() != 'p') {};
+
+
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
 	p1->s_x = 4;
@@ -246,7 +249,6 @@ void move() {
 		{
 			bgd[tail->s_y][tail->s_x] = ' ';//去掉蛇尾
 			bgd[p2->s_y][p2->s_x] = 'O';//原来的蛇头变成蛇身
-
 			p1 = (struct snake*)malloc(SN);//来个蛇头
 			p1->s_y = b;//联结起来
 			p1->s_x = a;
@@ -316,13 +318,13 @@ void move() {
 			li = 0;
 		else {//长度不为1，失去后半段蛇身
 			dif = dif + 50;
-			for (z = 1; z <= 2*num / 3; z++) {
+			for (z = 1; z <= 2 * num / 3; z++) {
 				bgd[tail->s_y][tail->s_x] = ' ';
 				tail = tail->next;
 				free(tail->formal);
 				tail->formal = NULL;
 			}
-			num = num - 2*num / 3;
+			num = num - 2 * num / 3;
 		}
 	}
 }
@@ -338,4 +340,35 @@ void print2() {
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
+}
+
+void welcome() {
+	char wel[20][36] = {
+	"***********************************",
+	"*                                 *",
+	"*            S N A K E            *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*GOOD! LET`S PRESS 'P' TO BEGIN!!!*",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"***********************************"
+	};
+	SetConsoleActiveScreenBuffer(hOutput);
+	for (y = 0; y < 20; y++) {
+		coord.Y = y;
+		WriteConsoleOutputCharacterA(hOutput, wel[y], 36, coord, &bytes);
+	}
+	SetConsoleActiveScreenBuffer(hOutput);
 }
