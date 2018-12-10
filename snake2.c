@@ -4,6 +4,8 @@
 #include<windows.h>
 #include<mmsystem.h>//导入声音头文件
 #pragma comment(lib, "winmm.lib")
+#include"clear.h"
+#include"struct.h"
 //定义四个方向的对应字符
 #define up 'w'
 #define down 's'
@@ -11,23 +13,17 @@
 #define right 'd'
 
 #define SN sizeof(struct snake)
-struct snake//结构体,内含蛇节点的坐标和其前、后节点的指针；
-{
-	int s_y;
-	int s_x;
-	struct snake * next;
-	struct snake * formal;
-} *p1, *p2, *tail;
+struct snake *p1, *p2, *tail;//结构体,内含蛇节点的坐标和其前、后节点的指针；
 
 HANDLE hOutput, hOutBuf;//控制台屏幕缓冲区句柄
 COORD coord = { 0,0 };
 //双缓冲处理显示
 DWORD bytes = 0;
 
-
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
-int li, num, f1, f2, b, a, y, x, z,q, c = 0, i = 0, dif = 300;
+int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;
+int lv=1;//难度等级初始设为1
 int poison[5][2] = { 0 };
 char map2[20][20];
 char bgd[20][36] =
@@ -44,7 +40,7 @@ char bgd[20][36] =
 "#                  # V: poison    |",
 "#                  # X: bomb      |",
 "#                  #              |",
-"#                  #              |",
+"#                  #score 00 / 20 |",
 "#                  #              |",
 "#                  #              |",
 "#                  #              |",
@@ -76,18 +72,20 @@ int main()
 	cci.dwSize = 1;
 	SetConsoleCursorInfo(hOutput, &cci);
 	SetConsoleCursorInfo(hOutBuf, &cci);
-	PlaySound("001.wav", NULL, SND_ASYNC | SND_NODEFAULT|SND_LOOP);//循环播放背景音乐
-	void welcome();//贪吃蛇初始欢迎界面
+	PlaySound("01.wav", NULL, SND_ASYNC | SND_NODEFAULT|SND_LOOP);//循环播放背景音乐
 	void food();//生成食物
 	void bomb_and_poison();//生成毒草和地雷
 	void direction();//处理输入数据，转为蛇的走向
 	void move();//根据蛇咬到了啥决定运动，伸长，结束游戏等。
 	void print1();//用来展示缓冲区1
 	void print2();//用来展示缓冲区2
+	void choise();//界面选择相关
+	void welcome();//贪吃蛇初始欢迎界面
+	void free_chain();//将链表释放
+	void resornot();
+	choise();
 
-	welcome();
-	while (_getch() != 'p') {};
-
+	loop:
 
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
@@ -110,6 +108,8 @@ int main()
 			dir = _getch();
 		direction();
 		move();
+		bgd[13][26] = num / 10 + 48;
+		bgd[13][27] = num % 10 + 48;
 		if (li == 0)
 			break;
 		print1();
@@ -130,6 +130,8 @@ int main()
 			dir = _getch();
 		direction();
 		move();
+		bgd[13][26] = num / 10 + 48;
+		bgd[13][27] = num % 10 + 48;
 		if (li == 0)
 			break;
 		print2();
@@ -138,11 +140,34 @@ int main()
 			break;
 		Sleep(dif);
 	}
-	PlaySound("002.wav", NULL, SND_ASYNC | SND_NODEFAULT);//结束音
-	while (_getch() != 'p') {}
+	if (num < 20) {
+		PlaySound("02.wav", NULL, SND_ASYNC | SND_NODEFAULT);//结束音	
+		while (_getch() != 'p') {}
+		free_chain();
+	}
+	else {
+		PlaySound("03.wav", NULL, SND_ASYNC | SND_NODEFAULT);
+		resornot();
+
+		goto loop;
+	}
+
 
 	return 0;
 }
+
+void resornot() {
+	void clear();//清屏
+	void free_chain();//将链表释放
+	if (_getch() == 'p') {
+		free_chain();
+		clear();
+		x = 1, c = 0, i = 0, dif = 300;
+		lv++;
+	}
+	else
+		resornot();
+	}
 
 void direction()
 {
@@ -187,7 +212,7 @@ void food()
 	if (num != 0) {
 		srand(f1*(int)(dir)+1);
 		f1 = rand() % 18 + 1;
-		srand(f2*(int)dir);
+		srand(f2*(int)dir+1);
 		f2 = rand() % 18 + 1;
 	}
 	if (bgd[f1][f2] != ' ')     //食物是否和蛇头,墙壁或蛇身或毒草，地雷重合
@@ -277,7 +302,7 @@ void move() {
 		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
 		num++;//吃到食物计数
-		dif = dif - 10;
+		//dif = dif - 10;
 		food();//刷新食物
 		bomb_and_poison();
 	}
@@ -343,24 +368,23 @@ void print2() {
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
-}
+}	
 
-void welcome() {
-	char wel[20][36] = {
+char wel[20][36] = {
 	"***********************************",
 	"*                                 *",
 	"*            S N A K E            *",
 	"*                                 *",
+	"***********************************",
 	"*                                 *",
 	"*                                 *",
+	"*      =>   N E W  G A M E        *",
 	"*                                 *",
 	"*                                 *",
+	"*           C O N T I N U E       *",
 	"*                                 *",
 	"*                                 *",
-	"*                                 *",
-	"*GOOD! LET`S PRESS 'P' TO BEGIN!!!*",
-	"*                                 *",
-	"*                                 *",
+	"*           M O R E :)            *",
 	"*                                 *",
 	"*                                 *",
 	"*                                 *",
@@ -368,10 +392,139 @@ void welcome() {
 	"*                                 *",
 	"***********************************"
 	};
+
+void welcome() {
 	SetConsoleActiveScreenBuffer(hOutput);
 	for (y = 0; y < 20; y++) {
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutput, wel[y], 36, coord, &bytes);
 	}
 	SetConsoleActiveScreenBuffer(hOutput);
+}
+
+void choise() {
+	welcome();//打印界面
+	char co;
+	co = _getch();//得到输入值
+	if (co== 'p'&&x == 1) {}
+	else if (co== 'p'&&x == 2) {
+		choise();
+	}
+	else if (co == 'p'&&x == 3) {
+		choise();
+	}
+	else if (co == 's') {//下移
+		if (x == 3) {
+			x = 1;
+			wel[13][7] = ' ';
+			wel[13][8] = ' ';
+			wel[7][7] = '=';
+			wel[7][8] = '>';
+		}
+		else if (x == 1) {
+			x = 2;
+			wel[7][7] = ' ';
+			wel[7][8] = ' ';
+			wel[10][7] = '=';
+			wel[10][8] = '>';
+		}
+		else if (x == 2) {
+			x = 3;
+			wel[10][7] = ' ';
+			wel[10][8] = ' ';
+			wel[13][7] = '=';
+			wel[13][8] = '>';
+		}
+		choise();
+	}
+	else if (co == 'w') {//上移
+		if (x == 3) {
+			x = 2;
+			wel[13][7] = ' ';
+			wel[13][8] = ' ';
+			wel[10][7] = '=';
+			wel[10][8] = '>';
+		}
+		else if (x == 1) {
+			x = 3;
+			wel[7][7] = ' ';
+			wel[7][8] = ' ';
+			wel[13][7] = '=';
+			wel[13][8] = '>';
+		}
+		else if (x == 2) {
+			x = 1;
+			wel[10][7] = ' ';
+			wel[10][8] = ' ';
+			wel[7][7] = '=';
+			wel[7][8] = '>';
+		}
+		choise();
+	}
+	else if (co== -32) {
+		char eo;
+		eo = _getch();
+		if (eo== 72) {
+			if (x == 3) {
+				x = 2;
+				wel[13][7] = ' ';
+				wel[13][8] = ' ';
+				wel[10][7] = '=';
+				wel[10][8] = '>';
+			}
+			else if (x == 1) {
+				x = 3;
+				wel[7][7] = ' ';
+				wel[7][8] = ' ';
+				wel[13][7] = '=';
+				wel[13][8] = '>';
+			}
+			else if (x == 2) {
+				x = 1;
+				wel[10][7] = ' ';
+				wel[10][8] = ' ';
+				wel[7][7] = '=';
+				wel[7][8] = '>';
+			}
+		}
+		else if (eo == 80) {
+			if (x == 3) {
+				x = 1;
+				wel[13][7] = ' ';
+				wel[13][8] = ' ';
+				wel[7][7] = '=';
+				wel[7][8] = '>';
+			}
+			else if (x == 1) {
+				x = 2;
+				wel[7][7] = ' ';
+				wel[7][8] = ' ';
+				wel[10][7] = '=';
+				wel[10][8] = '>';
+			}
+			else if (x == 2) {
+				x = 3;
+				wel[10][7] = ' ';
+				wel[10][8] = ' ';
+				wel[13][7] = '=';
+				wel[13][8] = '>';
+			}
+		}
+		choise();
+	}
+	else choise();
+}
+
+void free_chain() {
+	while ((tail ->next)!= NULL) {
+		tail = tail->next;
+		free(tail->formal);
+	}
+}
+
+void clear() {
+	int c_y, c_x;
+	for (c_y = 1; c_y <= 18; c_y++)
+		for (c_x = 1; c_x <= 18; c_x++)
+			bgd[c_y][c_x] = ' ';
 }
