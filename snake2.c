@@ -1,3 +1,4 @@
+
 #include<stdio.h>
 #include<stdlib.h>        
 #include<conio.h>      
@@ -271,8 +272,7 @@ void move() {
 		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
 		num++;//吃到食物计数
-		if (num % 4 == 0 && dif > 0)
-			dif = dif - 40;
+		dif = dif - 10;
 		food();//刷新食物
 		bomb_and_poison();
 	}
@@ -314,15 +314,15 @@ void move() {
 		p2 = p1;
 		if (num <= 1)//当长度为1
 			li = 0;
-		else {//长度不为1，减速且失去后半段蛇身
-			dif = dif + 50;//减速		
-			for (z = 1; z <= num / 2; z++) {
+		else {//长度不为1，失去后半段蛇身
+			dif = dif + 50;
+			for (z = 1; z <= 2*num / 3; z++) {
 				bgd[tail->s_y][tail->s_x] = ' ';
 				tail = tail->next;
 				free(tail->formal);
 				tail->formal = NULL;
 			}
-			num = num - num / 2;
+			num = num - 2*num / 3;
 		}
 	}
 }
