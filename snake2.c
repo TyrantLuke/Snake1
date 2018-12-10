@@ -2,6 +2,8 @@
 #include<stdlib.h>        
 #include<conio.h>      
 #include<windows.h>
+#include<mmsystem.h>//导入声音头文件
+#pragma comment(lib, "winmm.lib")
 //定义四个方向的对应字符
 #define up 'w'
 #define down 's'
@@ -74,6 +76,7 @@ int main()
 	cci.dwSize = 1;
 	SetConsoleCursorInfo(hOutput, &cci);
 	SetConsoleCursorInfo(hOutBuf, &cci);
+	PlaySound("001.wav", NULL, SND_ASYNC | SND_NODEFAULT|SND_LOOP);//循环播放背景音乐
 	void welcome();//贪吃蛇初始欢迎界面
 	void food();//生成食物
 	void bomb_and_poison();//生成毒草和地雷
@@ -135,7 +138,7 @@ int main()
 			break;
 		Sleep(dif);
 	}
-
+	PlaySound("002.wav", NULL, SND_ASYNC | SND_NODEFAULT);//结束音
 	while (_getch() != 'p') {}
 
 	return 0;
