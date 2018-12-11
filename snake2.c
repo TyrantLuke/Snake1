@@ -20,6 +20,7 @@ COORD coord = { 0,0 };
 //双缓冲处理显示
 DWORD bytes = 0;
 
+FILE * level=NULL;
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
 int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;
@@ -86,7 +87,8 @@ int main()
 	void lv1();//分别表示第1,2,3关的结束处理
 	void lv2();
 	void lv3();
-	choise();
+
+	choise();//用户选择界面
 
 loop://以便进入下一关
 
@@ -213,8 +215,13 @@ void direction()
 		case 'p':while (1) {
 			if ((q = _getch()) == 'p')         //暂停的实现
 				break;
-			else if (q == 27)
+			else if (q == 27) {
+				level = fopen("mod.txt", "w");
+				putc(lv, level);
+				fclose(level);
+				level = NULL;
 				exit(0);
+			}
 		}
 		default: {//若为其他键输入，则无效化
 			dir = formal_dir;
@@ -329,7 +336,7 @@ void move() {
 		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
 		num++;//吃到食物计数
-		dif = dif - 10;
+		dif = dif - 5;
 		food();//刷新食物
 		bomb_and_poison();
 	}
@@ -420,6 +427,29 @@ char wel[20][36] = {
 	"***********************************"
 	};
 
+char more[20][36] = {
+	"***********************************",
+	"*                                 *",
+	"*            S N A K E            *",
+	"*                                 *",
+	"***********************************",
+	"*                                 *",
+	"*   THANKS TO:                    *",
+	"*   Planner : ZL                  *",
+	"*   Programmer : ZL               *",
+	"*   Arts : ZL                     *",
+	"*   Music : ZL                    *",
+	"*   Polish : ZL                   *",
+	"*   Publish : ZL                  *",
+	"*                                 *",
+	"*   and YOU,my friend!            *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                      (press P)  *",
+	"***********************************"
+};
+
 void welcome() {
 	SetConsoleActiveScreenBuffer(hOutput);
 	for (y = 0; y < 20; y++) {
@@ -435,9 +465,20 @@ void choise() {
 	co = _getch();//得到输入值
 	if (co== 'p'&&x == 1) {}
 	else if (co== 'p'&&x == 2) {
-		choise();
+		level = fopen("mod.txt", "r");
+		lv = getc(level);
+		fclose(level);
+		level = NULL;
 	}
 	else if (co == 'p'&&x == 3) {
+		char co2;
+    	SetConsoleActiveScreenBuffer(hOutput);
+		for (y = 0; y < 20; y++) {
+			coord.Y = y;
+			WriteConsoleOutputCharacterA(hOutput, more[y], 36, coord, &bytes);
+		}
+		SetConsoleActiveScreenBuffer(hOutput);
+		while((co2=_getch())!='p'){}
 		choise();
 	}
 	else if (co == 's') {//下移
