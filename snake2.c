@@ -42,7 +42,7 @@ char bgd[20][36] =
 "#                  #              |",
 "#                  #score 00 / 20 |",
 "#                  #              |",
-"#                  #              |",
+"#                  #Lv:  1        |",
 "#                  #              |",
 "#                  #              |",
 "#                  #              |",
@@ -72,7 +72,6 @@ int main()
 	cci.dwSize = 1;
 	SetConsoleCursorInfo(hOutput, &cci);
 	SetConsoleCursorInfo(hOutBuf, &cci);
-	PlaySound("01.wav", NULL, SND_ASYNC | SND_NODEFAULT|SND_LOOP);//循环播放背景音乐
 	void food();//生成食物
 	void bomb_and_poison();//生成毒草和地雷
 	void direction();//处理输入数据，转为蛇的走向
@@ -82,11 +81,22 @@ int main()
 	void choise();//界面选择相关
 	void welcome();//贪吃蛇初始欢迎界面
 	void free_chain();//将链表释放
-	void resornot();
+	void resornot();//一关结束后的处理
+	void clear();
+	void lv1();//分别表示第1,2,3关的结束处理
+	void lv2();
+	void lv3();
 	choise();
 
-	loop:
+loop://以便进入下一关
 
+	if (lv == 2) {//进入难度2
+		lv1();
+	}
+	else if (lv == 3) {//进入难度3
+		lv2();
+	}
+	PlaySound("01.wav", NULL, SND_ASYNC | SND_NODEFAULT | SND_LOOP);//循环播放背景音乐
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
 	p1->s_x = 4;
@@ -110,6 +120,7 @@ int main()
 		move();
 		bgd[13][26] = num / 10 + 48;
 		bgd[13][27] = num % 10 + 48;
+		bgd[15][25] = lv + 48;
 		if (li == 0)
 			break;
 		print1();
@@ -140,23 +151,35 @@ int main()
 			break;
 		Sleep(dif);
 	}
-	if (num < 20) {
-		PlaySound("02.wav", NULL, SND_ASYNC | SND_NODEFAULT);//结束音	
+	if (num < 20) {//意外死亡
+		PlaySound("02.wav", NULL, SND_SYNC | SND_NODEFAULT);//结束音	
 		while (_getch() != 'p') {}
 		free_chain();
-	}
-	else {
-		PlaySound("03.wav", NULL, SND_ASYNC | SND_NODEFAULT);
-		resornot();
-
+		clear();
+		x = 1, c = 0, i = 0, dif = 300,lv=1;
+		choise();
 		goto loop;
 	}
-
+	else {//达成任务通关
+		PlaySound("03.wav", NULL, SND_SYNC | SND_NODEFAULT);//通关音
+			resornot();
+		if (lv == 4) {//完成最终难度
+			lv3();
+			while (_getch() != 'p') {}
+			free_chain();
+			clear();
+			x = 1, c = 0, i = 0, dif = 300, lv = 1;
+			choise();
+			goto loop;//清洗数据并重开游戏
+		}
+		else
+			goto loop;//重开游戏
+	}
 
 	return 0;
 }
 
-void resornot() {
+void resornot() {//清除地图，释放内存
 	void clear();//清屏
 	void free_chain();//将链表释放
 	if (_getch() == 'p') {
@@ -169,8 +192,10 @@ void resornot() {
 		resornot();
 	}
 
+
 void direction()
 {
+	char q;
 	if (dir != -32) {//有两套控制方向的键，第一套：wsad
 		if (dir == up && formal_dir == down)//防止控制蛇往回走
 			dir = formal_dir;
@@ -186,8 +211,10 @@ void direction()
 		case left:a = a - 1; break;
 		case right:a = a + 1; break;
 		case 'p':while (1) {
-			if ('p' == _getch())         //暂停的实现
+			if ((q = _getch()) == 'p')         //暂停的实现
 				break;
+			else if (q == 27)
+				exit(0);
 		}
 		default: {//若为其他键输入，则无效化
 			dir = formal_dir;
@@ -261,7 +288,7 @@ void bomb_and_poison() {
 
 
 void move() {
-	if (bgd[b][a] == '#') //判断是否撞墙
+	if (bgd[b][a] == '#'||bgd[b][a]=='*') //判断是否撞墙
 		li = 0;
 	else if (bgd[b][a] == 'O')//是否咬到自己
 		li = 0;
@@ -302,7 +329,7 @@ void move() {
 		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
 		num++;//吃到食物计数
-		//dif = dif - 10;
+		dif = dif - 10;
 		food();//刷新食物
 		bomb_and_poison();
 	}
@@ -389,7 +416,7 @@ char wel[20][36] = {
 	"*                                 *",
 	"*                                 *",
 	"*                                 *",
-	"*                                 *",
+	"*                      (press P)  *",
 	"***********************************"
 	};
 
@@ -461,6 +488,9 @@ void choise() {
 		}
 		choise();
 	}
+	else if (co == 27) {//按esc退出游戏
+		exit(0);
+	}
 	else if (co== -32) {
 		char eo;
 		eo = _getch();
@@ -527,4 +557,83 @@ void clear() {
 	for (c_y = 1; c_y <= 18; c_y++)
 		for (c_x = 1; c_x <= 18; c_x++)
 			bgd[c_y][c_x] = ' ';
+}
+
+void lv1() {
+	int lt;
+	for (lt = 1; lt <= 6; lt++) {
+		bgd[12][lt] = '#';
+		bgd[lt][7] = '#';
+		bgd[7][19 - lt] = '#';
+		bgd[19 - lt][12] = '#';
+	}
+	bgd[9][9] = '#';
+	bgd[9][10] = '#';
+	bgd[10][9] = '#';
+	bgd[10][10] = '#';
+}
+
+void lv2() {
+	char bgd3[21][21] = {
+"********************",
+"*                  *",
+"*  ****     * * *  *",
+"*  *  *       *    *",
+"*           * * *  *",
+"*                  *",
+"*                  *",
+"*       *  *       *",
+"*   *   *  *   *   *",
+"*       *  *       *",
+"* *    *    *    * *",
+"*     **    **     *",
+"*       *  *       *",
+"*   *   *  *   *   *",
+"*      *    *      *",
+"*     *      *     *",
+"*    *        *    *",
+"*   *          *   *",
+"*   *          *   *",
+"********************"
+	};
+	int lt,lm;
+	for (lt = 1; lt <= 18; lt++)
+		for (lm = 1; lm <= 18; lm++)
+			bgd[lt][lm] = bgd3[lt][lm];
+}
+
+void lv3() {
+	clear();
+	int lt,lm;
+	char bgd3[21][21] = {
+"####################",
+"#                  #",
+"#                  #",
+"#                  #",
+"#                  #",
+"#                  #",
+"#  G R E A T !!!   #",
+"#                  #",
+"#                  #",
+"#YOU WON THE GAME !#",
+"#      __  __      #",
+"#     /  \/  \       #",
+"#     \      /      #",
+"#      \    /       #",
+"#       \  /        #",
+"#        \/         #",
+"#                  #",
+"#    THANK YOU!    #",
+"#                  #",
+"####################"
+	};
+	for (lt = 0; lt <= 19; lt++)
+		for (lm = 0; lm <= 19; lm++)
+			bgd[lt][lm] = bgd3[lt][lm];
+	SetConsoleActiveScreenBuffer(hOutput);
+	for (y = 0; y < 20; y++) {
+		coord.Y = y;
+		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
+	}
+	SetConsoleActiveScreenBuffer(hOutput);
 }
