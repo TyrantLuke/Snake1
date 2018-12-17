@@ -4,8 +4,6 @@
 #include<windows.h>
 #include<mmsystem.h>//导入声音头文件
 #pragma comment(lib, "winmm.lib")
-#include"clear.h"
-#include"struct.h"
 //定义四个方向的对应字符
 #define up 'w'
 #define down 's'
@@ -13,6 +11,14 @@
 #define right 'd'
 
 #define SN sizeof(struct snake)
+struct snake
+{
+	int s_y;
+	int s_x;
+	struct snake * next;
+	struct snake * formal;
+};
+
 struct snake *p1, *p2, *tail;//结构体,内含蛇节点的坐标和其前、后节点的指针；
 
 HANDLE hOutput, hOutBuf;//控制台屏幕缓冲区句柄
@@ -21,6 +27,8 @@ COORD coord = { 0,0 };
 DWORD bytes = 0;
 
 FILE * level=NULL;
+FILE * list = NULL;
+char name[13];
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
 int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;
@@ -84,6 +92,7 @@ int main()
 	void free_chain();//将链表释放
 	void resornot();//一关结束后的处理
 	void clear();
+	void puts_name();//输入名字
 	void lv1();//分别表示第1,2,3关的结束处理
 	void lv2();
 	void lv3();
@@ -91,14 +100,16 @@ int main()
 	choise();//用户选择界面
 
 loop://以便进入下一关
-
-	if (lv == 2) {//进入难度2
+	if (lv == 1) {//难度1
+		puts_name();
+	}
+	else if (lv == 2) {//进入难度2
 		lv1();
 	}
 	else if (lv == 3) {//进入难度3
 		lv2();
 	}
-	PlaySound("01.wav", NULL, SND_ASYNC | SND_NODEFAULT | SND_LOOP);//循环播放背景音乐
+	PlaySound("01.wav", NULL,SND_ASYNC | SND_NODEFAULT | SND_LOOP);//循环播放背景音乐
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
 	p1->s_x = 4;
@@ -163,7 +174,7 @@ loop://以便进入下一关
 		goto loop;
 	}
 	else {//达成任务通关
-		PlaySound("03.wav", NULL, SND_SYNC | SND_NODEFAULT);//通关音
+		PlaySound("03.wav", NULL,  SND_SYNC | SND_NODEFAULT);//通关音
 			resornot();
 		if (lv == 4) {//完成最终难度
 			lv3();
@@ -463,14 +474,18 @@ void choise() {
 	welcome();//打印界面
 	char co;
 	co = _getch();//得到输入值
-	if (co== 'p'&&x == 1) {}
+	if (co== 'p'&&x == 1) {
+		PlaySound("04.wav", NULL,SND_SYNC | SND_NODEFAULT);
+	}
 	else if (co== 'p'&&x == 2) {
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
 		level = fopen("mod.txt", "r");
 		lv = getc(level);
 		fclose(level);
 		level = NULL;
 	}
 	else if (co == 'p'&&x == 3) {
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
 		char co2;
     	SetConsoleActiveScreenBuffer(hOutput);
 		for (y = 0; y < 20; y++) {
@@ -479,6 +494,7 @@ void choise() {
 		}
 		SetConsoleActiveScreenBuffer(hOutput);
 		while((co2=_getch())!='p'){}
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
 		choise();
 	}
 	else if (co == 's') {//下移
@@ -658,7 +674,7 @@ void lv3() {
 "#                  #",
 "#YOU WON THE GAME !#",
 "#      __  __      #",
-"#     /  \/  \       #",
+"#     /  \ / \       #",
 "#     \      /      #",
 "#      \    /       #",
 "#       \  /        #",
@@ -677,4 +693,58 @@ void lv3() {
 		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
 	SetConsoleActiveScreenBuffer(hOutput);
+}
+
+void clear(char m[20][36]) {
+	int x, y;
+	for (x = 1; x <= 18; x++)
+		for (y = 1; y <= 18; y++)
+			m[x][y] = ' ';
+}
+
+char bgd4[5][21] = {//输入框打印
+	"###|------------|###",
+	"###| YOUR NAME? |###",
+	"###|            |###",
+	"###|            |###",
+	"###|------------|###",
+};
+
+void puts_name() {//输入名字
+	SetConsoleActiveScreenBuffer(hOutput);
+	int lt, lm,ln=4;
+	char ch;
+	for (lt = 4; lt <= 8; lt++) {
+		for (lm = 0; lm <= 19; lm++)
+			bgd[lt][lm] = bgd4[lt-4][lm];
+	}
+	for (y = 0; y < 20; y++) {
+		coord.Y = y;
+		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
+	}
+	while ((ch = _getch()) != 13) {
+		if (ln <= 15||ch==8) {
+			if (ch == 8) {//敲击backspace键
+				if (ln != 4) {//未到达最左侧
+					name[ln-4] = '\0';
+					ln--;
+					bgd[7][ln] = ' ';
+					ln--;
+				}
+			}
+			else {
+				bgd[7][ln] = ch;
+				name[ln - 4] = ch;
+			}
+		}
+
+		for (y = 0; y < 20; y++) {
+			coord.Y = y;
+			WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
+		}
+		SetConsoleActiveScreenBuffer(hOutput);
+		if(ln<=15)
+			ln++;
+	}
+	clear();
 }
