@@ -26,15 +26,39 @@ COORD coord = { 0,0 };
 //双缓冲处理显示
 DWORD bytes = 0;
 
-FILE * level=NULL;
-FILE * list = NULL;
+FILE * level=NULL;//储存关卡等级
+FILE * list = NULL;//储存通关人名（排行榜）
+FILE * temporary = NULL;//暂时储存人名（便于下次继续游戏）
 char name[13];
 char dir;                               //决定蛇头接下来的方向
 char formal_dir;                         //记忆蛇头原来的方向
-int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;
+int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;//dif为运动间隔时间
 int lv=1;//难度等级初始设为1
 int poison[5][2] = { 0 };
 char map2[20][20];
+
+char wel[20][36] = {
+   "***********************************",
+   "*                                 *",
+   "*            S N A K E            *",
+   "*                                 *",
+   "***********************************",
+   "*                                 *",
+   "*                                 *",
+   "*      =>   N E W  G A M E        *",
+   "*                                 *",
+   "*                                 *",
+   "*           C O N T I N U E       *",
+   "*                                 *",
+   "*                                 *",
+   "*           RANKING LIST          *",
+   "*                                 *",
+   "*                                 *",
+   "*           M O R E :)            *",
+   "*                                 *",
+   "*                      (press P)  *",
+   "***********************************"
+};
 char bgd[20][36] =
 { "####################--------------|",
 "#                  #     Snake    |",
@@ -59,6 +83,8 @@ char bgd[20][36] =
 
 int main()
 {
+	system("mode con cols=35 lines=20");//调整窗口大小
+	system("color 6F");//改变颜色
 	//用双缓冲解决闪屏问题；
 	//创建新的控制台缓冲区
 	hOutBuf = CreateConsoleScreenBuffer(
@@ -101,13 +127,18 @@ int main()
 
 loop://以便进入下一关
 	if (lv == 1) {//难度1
-		puts_name();
+		puts_name();//输入玩家的名字
 	}
 	else if (lv == 2) {//进入难度2
 		lv1();
 	}
 	else if (lv == 3) {//进入难度3
 		lv2();
+	}
+	int qw = 0;
+	while (name[qw] != '\0') {
+		bgd[18][qw + 20] = name[qw];//加载玩家姓名
+		qw++;
 	}
 	PlaySound("01.wav", NULL,SND_ASYNC | SND_NODEFAULT | SND_LOOP);//循环播放背景音乐
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
@@ -122,7 +153,7 @@ loop://以便进入下一关
 
 	formal_dir = dir = 's', li = 1;//初始方向向下，生命值为1
 	b = 4, a = 4;
-	num = 0;//num代表得分，也即吃到的食物个数
+	num = 20;//num代表得分，也即吃到的食物个数
 	food();
 	while (1)
 	{
@@ -166,10 +197,21 @@ loop://以便进入下一关
 	}
 	if (num < 20) {//意外死亡
 		PlaySound("02.wav", NULL, SND_SYNC | SND_NODEFAULT);//结束音	
+		while (name[qw] != '\0') {
+			bgd[18][qw + 20] =' ';//删掉地图上的玩家姓名
+			qw++;
+		}
 		while (_getch() != 'p') {}
 		free_chain();
 		clear();
-		x = 1, c = 0, i = 0, dif = 300,lv=1;
+		if (x == 2) {
+			x = 1;
+			wel[10][7] = ' ';
+			wel[10][8] = ' ';
+			wel[7][7] = '=';
+			wel[7][8] = '>';
+		}
+		c = 0, i = 0, dif = 300,lv=1;
 		choise();
 		goto loop;
 	}
@@ -178,10 +220,26 @@ loop://以便进入下一关
 			resornot();
 		if (lv == 4) {//完成最终难度
 			lv3();
+			while (name[qw] != '\0') {
+				bgd[18][qw + 20] = ' ';//删掉地图上的玩家姓名
+				qw++;
+			}
+			list = fopen("list.txt", "a");//现在将玩家姓名存入排行榜list中
+			fputs(name, list);
+			putc('\0', list);
+			fclose(list);
+			list = NULL;
 			while (_getch() != 'p') {}
 			free_chain();
 			clear();
-			x = 1, c = 0, i = 0, dif = 300, lv = 1;
+			if (x == 2) {
+				x = 1;
+				wel[10][7] = ' ';
+				wel[10][8] = ' ';
+				wel[7][7] = '=';
+				wel[7][8] = '>';
+			}
+			 c = 0, i = 0, dif = 300, lv = 1;
 			choise();
 			goto loop;//清洗数据并重开游戏
 		}
@@ -223,14 +281,18 @@ void direction()
 		case down:b = b + 1; break;
 		case left:a = a - 1; break;
 		case right:a = a + 1; break;
-		case 'p':while (1) {
-			if ((q = _getch()) == 'p')         //暂停的实现
+		case 'p':while (1) {//暂停的实现
+			if ((q = _getch()) == 'p')      //再次按下p启动   
 				break;
-			else if (q == 27) {
+			else if (q == 27) {//按下esc退出，并储存关卡信息
 				level = fopen("mod.txt", "w");
-				putc(lv, level);
+				temporary = fopen("temporary.txt", "w");
+				putc(lv, level);//储存关卡等级
+				fputs(name, temporary);//储存名字
 				fclose(level);
+				fclose(temporary);
 				level = NULL;
+				temporary = NULL;
 				exit(0);
 			}
 		}
@@ -347,7 +409,7 @@ void move() {
 		bgd[b][a] = '@';//蛇头字符
 		p2 = p1;
 		num++;//吃到食物计数
-		dif = dif - 5;
+		dif = dif - 8;
 		food();//刷新食物
 		bomb_and_poison();
 	}
@@ -415,30 +477,7 @@ void print2() {
 	}
 }	
 
-char wel[20][36] = {
-	"***********************************",
-	"*                                 *",
-	"*            S N A K E            *",
-	"*                                 *",
-	"***********************************",
-	"*                                 *",
-	"*                                 *",
-	"*      =>   N E W  G A M E        *",
-	"*                                 *",
-	"*                                 *",
-	"*           C O N T I N U E       *",
-	"*                                 *",
-	"*                                 *",
-	"*           M O R E :)            *",
-	"*                                 *",
-	"*                                 *",
-	"*                                 *",
-	"*                                 *",
-	"*                      (press P)  *",
-	"***********************************"
-	};
-
-char more[20][36] = {
+char more[20][36] = {//第四个选项画面（更多信息）
 	"***********************************",
 	"*                                 *",
 	"*            S N A K E            *",
@@ -461,6 +500,29 @@ char more[20][36] = {
 	"***********************************"
 };
 
+char thelist[20][36] = {//第三个选项画面（排行榜）
+	"***********************************",
+	"*                                 *",
+	"*            S N A K E            *",
+	"*                                 *",
+	"***********************************",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"*                                 *",
+	"***********************************"
+};
+
 void welcome() {
 	SetConsoleActiveScreenBuffer(hOutput);
 	for (y = 0; y < 20; y++) {
@@ -472,19 +534,52 @@ void welcome() {
 
 void choise() {
 	welcome();//打印界面
-	char co;
+	char co;//co表示敲击的值，x表示目前在哪一个选项
 	co = _getch();//得到输入值
-	if (co== 'p'&&x == 1) {
-		PlaySound("04.wav", NULL,SND_SYNC | SND_NODEFAULT);
+	if (co== 'p'&&x == 1) {//（开始新游戏）
+		PlaySound("04.wav", NULL,SND_SYNC | SND_NODEFAULT);//音效（下同）
 	}
-	else if (co== 'p'&&x == 2) {
+	else if (co== 'p'&&x == 2) {//（继续）
 		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
 		level = fopen("mod.txt", "r");
-		lv = getc(level);
+		temporary = fopen("temporary.txt", "r");
+		lv = getc(level);//取出关卡等级
+		fgets(name, 13, temporary);//取出名字
 		fclose(level);
+		fclose(temporary);
 		level = NULL;
+		temporary = NULL;
 	}
-	else if (co == 'p'&&x == 3) {
+	else if (co == 'p'&&x == 3) {//（排行榜）
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		int q_y=5,q_x=1;//控制纵横，便于打印排行榜数据
+		char op;
+		list = fopen("list.txt", "r");
+		while((op = getc(list)) != EOF) {
+			if (op == '\0') {
+				q_y++;
+				q_x = 1;
+			}
+			if (q_y >= 19)
+				break;
+			if (op != '\0') {
+				thelist[q_y][q_x] = op;
+				q_x++;
+			}
+		}
+		fclose(list);
+		list = NULL;
+		SetConsoleActiveScreenBuffer(hOutput);
+		for (y = 0; y < 20; y++) {
+			coord.Y = y;
+			WriteConsoleOutputCharacterA(hOutput, thelist[y], 36, coord, &bytes);
+		}
+		SetConsoleActiveScreenBuffer(hOutput);
+		while(_getch()!='p'){}
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		choise();
+	}
+	else if (co == 'p'&&x == 4) {//（更多）
 		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
 		char co2;
     	SetConsoleActiveScreenBuffer(hOutput);
@@ -499,11 +594,11 @@ void choise() {
 	}
 	else if (co == 's') {//下移
 		if (x == 3) {
-			x = 1;
+			x = 4;
 			wel[13][7] = ' ';
 			wel[13][8] = ' ';
-			wel[7][7] = '=';
-			wel[7][8] = '>';
+			wel[16][7] = '=';
+			wel[16][8] = '>';
 		}
 		else if (x == 1) {
 			x = 2;
@@ -518,6 +613,13 @@ void choise() {
 			wel[10][8] = ' ';
 			wel[13][7] = '=';
 			wel[13][8] = '>';
+		}
+		else if (x == 4) {
+			x = 1;
+			wel[16][7] = ' ';
+			wel[16][8] = ' ';
+			wel[7][7] = '=';
+			wel[7][8] = '>';
 		}
 		choise();
 	}
@@ -530,11 +632,11 @@ void choise() {
 			wel[10][8] = '>';
 		}
 		else if (x == 1) {
-			x = 3;
+			x = 4;
 			wel[7][7] = ' ';
 			wel[7][8] = ' ';
-			wel[13][7] = '=';
-			wel[13][8] = '>';
+			wel[16][7] = '=';
+			wel[16][8] = '>';
 		}
 		else if (x == 2) {
 			x = 1;
@@ -542,6 +644,13 @@ void choise() {
 			wel[10][8] = ' ';
 			wel[7][7] = '=';
 			wel[7][8] = '>';
+		}
+		else if (x == 4) {
+			x = 3;
+			wel[16][7] = ' ';
+			wel[16][8] = ' ';
+			wel[13][7] = '=';
+			wel[13][8] = '>';
 		}
 		choise();
 	}
@@ -551,7 +660,7 @@ void choise() {
 	else if (co== -32) {
 		char eo;
 		eo = _getch();
-		if (eo== 72) {
+		if (eo== 72) {//上移
 			if (x == 3) {
 				x = 2;
 				wel[13][7] = ' ';
@@ -560,11 +669,11 @@ void choise() {
 				wel[10][8] = '>';
 			}
 			else if (x == 1) {
-				x = 3;
+				x = 4;
 				wel[7][7] = ' ';
 				wel[7][8] = ' ';
-				wel[13][7] = '=';
-				wel[13][8] = '>';
+				wel[16][7] = '=';
+				wel[16][8] = '>';
 			}
 			else if (x == 2) {
 				x = 1;
@@ -572,15 +681,22 @@ void choise() {
 				wel[10][8] = ' ';
 				wel[7][7] = '=';
 				wel[7][8] = '>';
+			}
+			else if (x == 4) {
+				x = 3;
+				wel[16][7] = ' ';
+				wel[16][8] = ' ';
+				wel[13][7] = '=';
+				wel[13][8] = '>';
 			}
 		}
-		else if (eo == 80) {
+		else if (eo == 80) {//下移
 			if (x == 3) {
-				x = 1;
+				x = 4;
 				wel[13][7] = ' ';
 				wel[13][8] = ' ';
-				wel[7][7] = '=';
-				wel[7][8] = '>';
+				wel[16][7] = '=';
+				wel[16][8] = '>';
 			}
 			else if (x == 1) {
 				x = 2;
@@ -595,6 +711,13 @@ void choise() {
 				wel[10][8] = ' ';
 				wel[13][7] = '=';
 				wel[13][8] = '>';
+			}
+			else if (x == 4) {
+				x = 1;
+				wel[16][7] = ' ';
+				wel[16][8] = ' ';
+				wel[7][7] = '=';
+				wel[7][8] = '>';
 			}
 		}
 		choise();
@@ -661,7 +784,7 @@ void lv2() {
 
 void lv3() {
 	clear();
-	int lt,lm;
+	int lt=0,lm;
 	char bgd3[21][21] = {
 "####################",
 "#                  #",
@@ -684,15 +807,24 @@ void lv3() {
 "#                  #",
 "####################"
 	};
+	while (name[lt] != '\0') {//打印玩家姓名
+		bgd3[5][lt + 1] = name[lt];
+		lt++;
+	};
 	for (lt = 0; lt <= 19; lt++)
 		for (lm = 0; lm <= 19; lm++)
 			bgd[lt][lm] = bgd3[lt][lm];
+	lt = 0;
 	SetConsoleActiveScreenBuffer(hOutput);
 	for (y = 0; y < 20; y++) {
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
 	SetConsoleActiveScreenBuffer(hOutput);
+	while (name[lt] != '\0') {//去除玩家姓名
+		bgd3[5][lt + 1] = ' ';
+		lt++;
+	};
 }
 
 void clear(char m[20][36]) {
@@ -722,7 +854,7 @@ void puts_name() {//输入名字
 		coord.Y = y;
 		WriteConsoleOutputCharacterA(hOutput, bgd[y], 36, coord, &bytes);
 	}
-	while ((ch = _getch()) != 13) {
+	while ((ch = _getch()) != 13) {//将输入的字符依次显示出来
 		if (ln <= 15||ch==8) {
 			if (ch == 8) {//敲击backspace键
 				if (ln != 4) {//未到达最左侧
@@ -734,7 +866,7 @@ void puts_name() {//输入名字
 			}
 			else {
 				bgd[7][ln] = ch;
-				name[ln - 4] = ch;
+				name[ln - 4] = ch;//将输入的字符储存进name数组中
 			}
 		}
 
@@ -748,3 +880,4 @@ void puts_name() {//输入名字
 	}
 	clear();
 }
+
