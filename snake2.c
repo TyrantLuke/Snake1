@@ -29,11 +29,17 @@ DWORD bytes = 0;
 FILE * level=NULL;//储存关卡等级
 FILE * list = NULL;//储存通关人名（排行榜）
 FILE * temporary = NULL;//暂时储存人名（便于下次继续游戏）
+FILE * tem_score = NULL;// 临时 储存分数
+FILE * file_score = NULL;//储存 最终 分数
 char name[13];
 char dir;                               //决定蛇头接下来的方向
-char formal_dir;                         //记忆蛇头原来的方向
+char formal_dir;                         //记忆蛇头原来的方向g
 int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;//dif为运动间隔时间
 int lv=1;//难度等级初始设为1
+int loop_num=0;//轮数，用于计算分数
+int i_bomb = 0;//计算吃到的地雷数
+int i_poison = 0;//计算吃到的毒草数
+int score=0;//分数
 int poison[5][2] = { 0 };
 char map2[20][20];
 
@@ -130,9 +136,23 @@ loop://以便进入下一关
 		puts_name();//输入玩家的名字
 	}
 	else if (lv == 2) {//进入难度2
+
+
+
+
+		tem_score = fopen("tem_score.txt", "r");
+		fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
+		fclose(tem_score);
+		tem_score = NULL;
+
 		lv1();
 	}
 	else if (lv == 3) {//进入难度3
+		tem_score = fopen("tem_score.txt", "r");
+		fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
+		fclose(tem_score);
+		tem_score = NULL;
+
 		lv2();
 	}
 	int qw = 0;
@@ -169,6 +189,7 @@ loop://以便进入下一关
 			break;
 		print1();
 		SetConsoleActiveScreenBuffer(hOutBuf);
+		loop_num++;
 		if (num == 20)
 			break;
 		Sleep(dif);
@@ -191,6 +212,7 @@ loop://以便进入下一关
 			break;
 		print2();
 		SetConsoleActiveScreenBuffer(hOutput);
+		loop_num++;
 		if (num == 20)
 			break;
 		Sleep(dif);
@@ -217,8 +239,25 @@ loop://以便进入下一关
 	}
 	else {//达成任务通关
 		PlaySound("03.wav", NULL,  SND_SYNC | SND_NODEFAULT);//通关音
-			resornot();
-		if (lv == 4) {//完成最终难度
+		resornot();
+		score = score + (int)1000000 / (loop_num*(i_poison + 1)*(i_bomb + 1));//公式，计算分数
+
+		tem_score = fopen("tem_score.txt", "w");//存分数到临时分数文件中
+		fprintf(tem_score, "%d", score);
+		fclose(tem_score);
+		tem_score = NULL;
+
+		i_poison = 0;//重新定位
+		i_bomb = 0;
+		loop_num = 0;
+		if (lv == 4) {//如果完成的是最终难度
+
+			file_score = fopen("file_score.txt", "a");
+			fprintf(file_score, " %d", score);//存入数字到最终分数文件中（已用空格隔开）
+			fclose(file_score);
+			file_score = NULL;
+
+			score = 0;//分数清零
 			lv3();
 			while (name[qw] != '\0') {
 				bgd[18][qw + 20] = ' ';//删掉地图上的玩家姓名
@@ -414,6 +453,7 @@ void move() {
 		bomb_and_poison();
 	}
 	else if (bgd[b][a] == 'V') {//吃到毒草，减链表长度，增速；
+		i_poison++;
 		num--;//分数减1
 		if (num < 0)
 			li = 0;
@@ -440,6 +480,7 @@ void move() {
 		}
 	}
 	else if (bgd[b][a] == 'X') {//踩到地雷，当长度为1时死亡。否则失去接近一半的长度，且速度稍稍减慢；
+		i_bomb++;
 		p1 = (struct snake*)malloc(SN);//同上，先处理蛇头
 		p1->s_y = b;
 		p1->s_x = a;
@@ -500,13 +541,13 @@ char more[20][36] = {//第四个选项画面（更多信息）
 	"***********************************"
 };
 
-char thelist[20][36] = {//第三个选项画面（排行榜）
+char thelist[20][36] = {//第三个选项画面（排行榜）！！！！！
 	"***********************************",
 	"*                                 *",
 	"*            S N A K E            *",
 	"*                                 *",
 	"***********************************",
-	"*                                 *",
+	"*Name                Score        *",
 	"*                                 *",
 	"*                                 *",
 	"*                                 *",
@@ -552,7 +593,9 @@ void choise() {
 	}
 	else if (co == 'p'&&x == 3) {//（排行榜）
 		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
-		int q_y=5,q_x=1;//控制纵横，便于打印排行榜数据
+
+		//打印人名部分
+		int q_y=6,q_x=1;//控制纵横，便于打印排行榜数据
 		char op;
 		list = fopen("list.txt", "r");
 		while((op = getc(list)) != EOF) {
@@ -569,6 +612,32 @@ void choise() {
 		}
 		fclose(list);
 		list = NULL;
+
+		//打印分数部分
+		q_y = 6, q_x = 20;//打印初始位置
+		file_score = fopen("file_score.txt", "r");
+		int qa1,qa2,qi=0;//qa存数，qi存数的位数
+		while (!feof(file_score)) {
+			fscanf(file_score, "%d", &qa1);
+			qa2 = qa1;
+			for (qi = 0; qa1 / 10 != 0;qi++) {
+				qa1 /= 10;
+			}
+			q_x += qi;
+			while (qi >= 0) {
+				thelist[q_y][q_x] = (char)(qa2 % 10 + 48);
+				qa2 = qa2 / 10;
+				qi--;
+				q_x--;
+			}
+			q_y++;
+			q_x = 20;
+		}
+		fclose(file_score);
+		file_score = NULL;
+
+
+
 		SetConsoleActiveScreenBuffer(hOutput);
 		for (y = 0; y < 20; y++) {
 			coord.Y = y;
@@ -797,10 +866,10 @@ void lv3() {
 "#                  #",
 "#YOU WON THE GAME !#",
 "#      __  __      #",
-"#     /  \ / \       #",
-"#     \      /      #",
-"#      \    /       #",
-"#       \  /        #",
+"#     ///\ ///      #",
+"#     \///////      #",
+"#      \/////       #",
+"#       \///        #",
 "#        \/         #",
 "#                  #",
 "#    THANK YOU!    #",
@@ -808,7 +877,7 @@ void lv3() {
 "####################"
 	};
 	while (name[lt] != '\0') {//打印玩家姓名
-		bgd3[5][lt + 1] = name[lt];
+		bgd3[4][lt + 4] = name[lt];
 		lt++;
 	};
 	for (lt = 0; lt <= 19; lt++)
@@ -880,4 +949,3 @@ void puts_name() {//输入名字
 	}
 	clear();
 }
-
