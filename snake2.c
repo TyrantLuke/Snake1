@@ -33,10 +33,11 @@ FILE * tem_score = NULL;// 临时 储存分数
 FILE * file_score = NULL;//储存 最终 分数
 char name[13];
 char dir;                               //决定蛇头接下来的方向
-char formal_dir;                         //记忆蛇头原来的方向g
+char formal_dir;                         //记忆蛇头原来的方向
 int li, num, f1, f2, b, a, y, x=1, z,q, c = 0, i = 0, dif = 300;//dif为运动间隔时间
 int lv=1;//难度等级初始设为1
 int loop_num=0;//轮数，用于计算分数
+int mod = 0;//模式参数，用于进入哪一种模式以及地图的选择。
 int i_bomb = 0;//计算吃到的地雷数
 int i_poison = 0;//计算吃到的毒草数
 int score=0;//分数
@@ -132,34 +133,36 @@ int main()
 	choise();//用户选择界面
 
 loop://以便进入下一关
-	if (lv == 1) {//难度1
-		puts_name();//输入玩家的名字
-	}
-	else if (lv == 2) {//进入难度2
-
-
-
-
-		tem_score = fopen("tem_score.txt", "r");
-		fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
-		fclose(tem_score);
-		tem_score = NULL;
-
-		lv1();
-	}
-	else if (lv == 3) {//进入难度3
-		tem_score = fopen("tem_score.txt", "r");
-		fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
-		fclose(tem_score);
-		tem_score = NULL;
-
-		lv2();
-	}
 	int qw = 0;
-	while (name[qw] != '\0') {
-		bgd[18][qw + 20] = name[qw];//加载玩家姓名
-		qw++;
+	if (mod == 0) {//挑战模式下
+		if (lv == 1) {//难度1
+			puts_name();//输入玩家的名字
+		}
+		else if (lv == 2) {//进入难度2
+			tem_score = fopen("tem_score.txt", "r");
+			fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
+			fclose(tem_score);
+			tem_score = NULL;
+
+			lv1();
+		}
+		else if (lv == 3) {//进入难度3
+			tem_score = fopen("tem_score.txt", "r");
+			fscanf(tem_score, "%d", &score);//将临时分数文件中的分数取出粘贴
+			fclose(tem_score);
+			tem_score = NULL;
+
+			lv2();
+		}
+		while (name[qw] != '\0') {
+			bgd[18][qw + 20] = name[qw];//加载玩家姓名
+			qw++;
+		}
 	}
+	else if (mod == 1) {	}
+	else if (mod == 2) { lv1(); }
+	else if (mod == 3) { lv2(); }
+
 	PlaySound("01.wav", NULL,SND_ASYNC | SND_NODEFAULT | SND_LOOP);//循环播放背景音乐
 	tail = p1 = p2 = (struct snake*)malloc(SN);//动态分配内存
 	p1->s_y = 4;//初始位置为（4,4）
@@ -173,7 +176,7 @@ loop://以便进入下一关
 
 	formal_dir = dir = 's', li = 1;//初始方向向下，生命值为1
 	b = 4, a = 4;
-	num = 20;//num代表得分，也即吃到的食物个数
+	num = 0;//num代表得分，也即吃到的食物个数
 	food();
 	while (1)
 	{
@@ -217,11 +220,16 @@ loop://以便进入下一关
 			break;
 		Sleep(dif);
 	}
-	if (num < 20) {//意外死亡
-		PlaySound("02.wav", NULL, SND_SYNC | SND_NODEFAULT);//结束音	
-		while (name[qw] != '\0') {
-			bgd[18][qw + 20] =' ';//删掉地图上的玩家姓名
-			qw++;
+	if ((num < 20)||(num>=20&&mod!=0)) {//意外死亡或在娱乐模式下通关
+		if (num < 20)
+			PlaySound("02.wav", NULL, SND_SYNC | SND_NODEFAULT);//结束音
+		else
+			PlaySound("03.wav", NULL, SND_SYNC | SND_NODEFAULT);//通关音
+		if(mod==0){
+			while (name[qw] != '\0') {
+				bgd[18][qw + 20] = ' ';//删掉地图上的玩家姓名
+				qw++;
+			}
 		}
 		while (_getch() != 'p') {}
 		free_chain();
@@ -234,14 +242,17 @@ loop://以便进入下一关
 			wel[7][8] = '>';
 		}
 		c = 0, i = 0, dif = 300,lv=1;
+		mod = 0;
+		i_poison = 0;//重新定位
+		i_bomb = 0;
+		loop_num = 0;
 		choise();
 		goto loop;
 	}
-	else {//达成任务通关
-		PlaySound("03.wav", NULL,  SND_SYNC | SND_NODEFAULT);//通关音
+	else {//挑战模式下达成任务通关
+		PlaySound("03.wav", NULL, SND_SYNC | SND_NODEFAULT);//通关音
 		resornot();
 		score = score + (int)1000000 / (loop_num*(i_poison + 1)*(i_bomb + 1));//公式，计算分数
-
 		tem_score = fopen("tem_score.txt", "w");//存分数到临时分数文件中
 		fprintf(tem_score, "%d", score);
 		fclose(tem_score);
@@ -278,7 +289,7 @@ loop://以便进入下一关
 				wel[7][7] = '=';
 				wel[7][8] = '>';
 			}
-			 c = 0, i = 0, dif = 300, lv = 1;
+			c = 0, i = 0, dif = 300, lv = 1;
 			choise();
 			goto loop;//清洗数据并重开游戏
 		}
@@ -574,11 +585,17 @@ void welcome() {
 }
 
 void choise() {
+	void mod_choice();//选择模式及其显示。
 	welcome();//打印界面
 	char co;//co表示敲击的值，x表示目前在哪一个选项
 	co = _getch();//得到输入值
-	if (co== 'p'&&x == 1) {//（开始新游戏）
+	if (co== 'p'&&x == 1) {//（选择开始新游戏）
 		PlaySound("04.wav", NULL,SND_SYNC | SND_NODEFAULT);//音效（下同）
+		mod_choice();//注：此时x为1.
+		if (x == 0) {
+			x = 1;
+			choise();
+		}
 	}
 	else if (co== 'p'&&x == 2) {//（继续）
 		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
@@ -635,8 +652,6 @@ void choise() {
 		}
 		fclose(file_score);
 		file_score = NULL;
-
-
 
 		SetConsoleActiveScreenBuffer(hOutput);
 		for (y = 0; y < 20; y++) {
@@ -948,4 +963,324 @@ void puts_name() {//输入名字
 			ln++;
 	}
 	clear();
+}
+
+char cho1[20][36] = {//选择界面1
+   "***********************************",
+   "*                                 *",
+   "*            S N A K E            *",
+   "*                                 *",
+   "***********************************",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*     [ challenge   mode ]        *",
+   "*                                 *",
+   "*                                 *",
+   "*       entertainment    mode     *",
+   "*                                 *",
+   "*                                 *",
+   "*       exit                      *",
+   "*                                 *",
+   "*                                 *",
+   "*                      (press P)  *",
+   "***********************************"
+};
+
+char cho2[20][36] = {//选择界面2
+   "***********************************",
+   "*                                 *",
+   "*            S N A K E            *",
+   "*                                 *",
+   "***********************************",
+   "*                                 *",
+   "*                                 *",
+   "*   < M A P >                     *",
+   "*                                 *",
+   "*                                 *",
+   "*   [ 1 ]        2          3     *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                                 *",
+   "*                      (press P)  *",
+   "***********************************"
+};
+
+void modprint1() {//打印cho1页面内容
+	SetConsoleActiveScreenBuffer(hOutput);
+	for (y = 0; y < 20; y++) {
+		coord.Y = y;
+		WriteConsoleOutputCharacterA(hOutput, cho1[y], 36, coord, &bytes);
+	}
+	SetConsoleActiveScreenBuffer(hOutput);
+}
+
+void modprint2() {//打印cho2页面内容
+	SetConsoleActiveScreenBuffer(hOutput);
+	for (y = 0; y < 20; y++) {
+		coord.Y = y;
+		WriteConsoleOutputCharacterA(hOutput, cho2[y], 36, coord, &bytes);
+	}
+	SetConsoleActiveScreenBuffer(hOutput);
+}
+
+void mod_choice() {
+	void modprint1();
+	void map_choice();
+	modprint1();
+	char co;
+	co = _getch();
+	if (co == 'p'&&x == 1) {//挑战模式
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		//进入开始界面（经典）
+	}
+	else if (co == 'p'&&x == 2) {//娱乐模式
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		//进入选关界面
+		x = 1;
+		map_choice();
+	}
+	else if (co == 'p'&&x == 3) {//返回
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		//退回上一界面
+		cho1[15][6] = ' ';
+		cho1[15][13] = ' ';
+		cho1[9][6] = '[';
+		cho1[9][25] = ']';
+		x = 0;
+	}
+	else if (co == 's') {//敲击“下移”
+		if (x == 1) {
+			x = 2;
+			cho1[9][6] = ' ';
+			cho1[9][25] = ' ';
+			cho1[12][6] = '[';
+			cho1[12][30] = ']';
+		}
+		else if (x == 2) {
+			x = 3;
+			cho1[12][6] = ' ';
+			cho1[12][30] = ' ';
+			cho1[15][6] = '[';
+			cho1[15][13] = ']';
+		}
+		else if (x == 3) {
+			x = 1;
+			cho1[15][6] = ' ';
+			cho1[15][13] = ' ';
+			cho1[9][6] = '[';
+			cho1[9][25] = ']';
+		}
+		mod_choice();
+	}
+	else if (co == 'w') {//敲击“上移”
+		if (x == 1) {
+			x = 3;
+			cho1[9][6] = ' ';
+			cho1[9][25] = ' ';
+			cho1[15][6] = '[';
+			cho1[15][13] = ']';
+		}
+		else if (x == 2) {
+			x = 1;
+			cho1[12][6] = ' ';
+			cho1[12][30] = ' ';
+			cho1[9][6] = '[';
+			cho1[9][25] = ']';
+		}
+		else if (x == 3) {
+			x = 2;
+			cho1[15][6] = ' ';
+			cho1[15][13] = ' ';
+			cho1[12][6] = '[';
+			cho1[12][30] = ']';
+		}
+		mod_choice();
+	}
+	else if (co == -32) {
+		char eo;
+		eo = _getch();
+		if (eo == 80) {//下移
+			if (x == 1) {
+				x = 2;
+				cho1[9][6] = ' ';
+				cho1[9][25] = ' ';
+				cho1[12][6] = '[';
+				cho1[12][30] = ']';
+			}
+			else if (x == 2) {
+				x = 3;
+				cho1[12][6] = ' ';
+				cho1[12][30] = ' ';
+				cho1[15][6] = '[';
+				cho1[15][13] = ']';
+			}
+			else if (x == 3) {
+				x = 1;
+				cho1[15][6] = ' ';
+				cho1[15][13] = ' ';
+				cho1[9][6] = '[';
+				cho1[9][25] = ']';
+			}
+		}
+		else if (eo == 72) {//上移
+			if (x == 1) {
+				x = 3;
+				cho1[9][6] = ' ';
+				cho1[9][25] = ' ';
+				cho1[15][6] = '[';
+				cho1[15][13] = ']';
+			}
+			else if (x == 2) {
+				x = 1;
+				cho1[12][6] = ' ';
+				cho1[12][30] = ' ';
+				cho1[9][6] = '[';
+				cho1[9][25] = ']';
+			}
+			else if (x == 3) {
+				x = 2;
+				cho1[15][6] = ' ';
+				cho1[15][13] = ' ';
+				cho1[12][6] = '[';
+				cho1[12][30] = ']';
+			}
+		}
+		mod_choice();
+	}
+	else mod_choice();
+}
+
+void map_choice() {
+	void modprint2();
+	modprint2();
+	char co;
+	co = _getch();
+	if (co == 'p'&&x == 1) {//地图1
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		mod = 1;
+	}
+	else if (co == 'p'&&x == 2) {//地图2
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		x = 1;
+		cho2[10][15] = ' ';
+		cho2[10][19] = ' ';
+		cho2[10][4] = '[';
+		cho2[10][8] = ']';
+		mod = 2;
+	}
+	else if (co == 'p'&&x == 3) {//地图3
+		PlaySound("04.wav", NULL, SND_SYNC | SND_NODEFAULT);
+		x = 1;
+		cho2[10][26] = ' ';
+		cho2[10][30] = ' ';
+		cho2[10][4] = '[';
+		cho2[10][8] = ']';
+		mod = 3;
+	}
+	else if (co == 'd') {//右移
+		if (x == 1) {
+			x = 2;
+			cho2[10][4] = ' ';
+			cho2[10][8] = ' ';
+			cho2[10][15] = '[';
+			cho2[10][19] = ']';
+		}
+		else if (x == 2) {
+			x = 3;
+			cho2[10][15] = ' ';
+			cho2[10][19] = ' ';
+			cho2[10][26] = '[';
+			cho2[10][30] = ']';
+		}
+		else if (x == 3) {
+			x = 1;
+			cho2[10][26] = ' ';
+			cho2[10][30] = ' ';
+			cho2[10][4] = '[';
+			cho2[10][8] = ']';
+		}
+		map_choice();
+	}
+	else if (co == 'a') {//左移
+		if (x == 1) {
+			x = 3;
+			cho2[10][4] = ' ';
+			cho2[10][8] = ' ';
+			cho2[10][26] = '[';
+			cho2[10][30] = ']';
+		}
+		else if (x == 2) {
+			x = 1;
+			cho2[10][15] = ' ';
+			cho2[10][19] = ' ';
+			cho2[10][4] = '[';
+			cho2[10][8] = ']';
+		}
+		else if (x == 3) {
+			x = 2;
+			cho2[10][26] = ' ';
+			cho2[10][30] = ' ';
+			cho2[10][15] = '[';
+			cho2[10][19] = ']';
+		}
+		map_choice();
+	}
+	else if (co == -32) {
+		char eo;
+		eo = _getch();
+		if (eo == 77) {//右移
+			if (x == 1) {
+				x = 2;
+				cho2[10][4] = ' ';
+				cho2[10][8] = ' ';
+				cho2[10][15] = '[';
+				cho2[10][19] = ']';
+			}
+			else if (x == 2) {
+				x = 3;
+				cho2[10][15] = ' ';
+				cho2[10][19] = ' ';
+				cho2[10][26] = '[';
+				cho2[10][30] = ']';
+			}
+			else if (x == 3) {
+				x = 1;
+				cho2[10][26] = ' ';
+				cho2[10][30] = ' ';
+				cho2[10][4] = '[';
+				cho2[10][8] = ']';
+			}
+		}
+		else if (eo == 75) {//左移
+			if (x == 1) {
+				x = 3;
+				cho2[10][4] = ' ';
+				cho2[10][8] = ' ';
+				cho2[10][26] = '[';
+				cho2[10][30] = ']';
+			}
+			else if (x == 2) {
+				x = 1;
+				cho2[10][15] = ' ';
+				cho2[10][19] = ' ';
+				cho2[10][4] = '[';
+				cho2[10][8] = ']';
+			}
+			else if (x == 3) {
+				x = 2;
+				cho2[10][26] = ' ';
+				cho2[10][30] = ' ';
+				cho2[10][15] = '[';
+				cho2[10][19] = ']';
+			}
+		}
+		map_choice();
+	}
+	else map_choice();
 }
